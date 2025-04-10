@@ -98,7 +98,9 @@ class HomeController extends Controller
     {
         try {
             if ($request->ajax()) {
-                $data = Peserta::orderBy('id', 'desc');
+                $data = Peserta::orderBy('id', 'desc')->where('status_peserta', 'diterima')
+                    ->whereDoesntHave('dokumen')
+                    ->where('status_dokumen', 'pending');
 
                 return DataTables::of($data)
                     ->addIndexColumn()
@@ -107,7 +109,8 @@ class HomeController extends Controller
                     })
                     ->addColumn('action', function ($row) {
                         return '<div class="btn-group" role="group">
-                                <button class="btn btn-warning btn-sm edit mr-2" data-id="' . $row->id . '">Edit</button>
+                                <button class="btn btn-warning btn-sm edit mr-2" data-id="' . $row->id . '">View</button>
+                                <button class="btn btn-success btn-sm upload mr-2" data-id="' . $row->id . '">Upload</button>
                             </div>';
                     })
                     ->rawColumns(['action'])
@@ -291,7 +294,14 @@ class HomeController extends Controller
                 'tanggal_selesai_asuransi' => 'required|date',
             ]);
 
-            $peserta = Peserta::updateOrCreate(['id' => $request->id], $request->all());
+            $data = $request->except('id');
+
+            if ($request->filled('id')) {
+                $peserta = Peserta::updateOrCreate(['id' => $request->id], $data);
+            } else {
+                $peserta = Peserta::create($data);
+            }
+
 
             DB::commit();
 
